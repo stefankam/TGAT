@@ -52,7 +52,7 @@ NUM_HEADS = args.n_head
 DROP_OUT = args.drop_out
 GPU = args.gpu
 UNIFORM = args.uniform
-NEW_NODE = args.new_node
+#NEW_NODE = args.new_node
 USE_TIME = args.time
 AGG_METHOD = args.agg_method
 ATTN_MODE = args.attn_mode
@@ -137,7 +137,13 @@ random.seed(2020)
 total_node_set = set(np.unique(np.hstack([g_df.u.values, g_df.i.values])))
 num_total_unique_nodes = len(total_node_set)
 
-mask_node_set = set(random.sample(set(src_l[ts_l > val_time]).union(set(dst_l[ts_l > val_time])), int(0.1 * num_total_unique_nodes)))
+#mask_node_set = set(random.sample(set(src_l[ts_l > val_time]).union(set(dst_l[ts_l > val_time])), int(0.1 * num_total_unique_nodes)))
+mask_node_set = set(
+    random.sample(
+        list(set(src_l[ts_l > val_time]).union(set(dst_l[ts_l > val_time]))),  # Convert set to list
+        int(0.1 * num_total_unique_nodes)
+    )
+)
 mask_src_flag = g_df.u.map(lambda x: x in mask_node_set).values
 mask_dst_flag = g_df.i.map(lambda x: x in mask_node_set).values
 none_node_flag = (1 - mask_src_flag) * (1 - mask_dst_flag)
@@ -212,13 +218,13 @@ nn_test_rand_sampler = RandEdgeSampler(nn_test_src_l, nn_test_dst_l)
 
 
 ### Model initialize
-device = torch.device('cuda:{}'.format(GPU))
+#device = torch.device('cuda:{}'.format(GPU))
 tgan = TGAN(train_ngh_finder, n_feat, e_feat,
             num_layers=NUM_LAYER, use_time=USE_TIME, agg_method=AGG_METHOD, attn_mode=ATTN_MODE,
             seq_len=SEQ_LEN, n_head=NUM_HEADS, drop_out=DROP_OUT, node_dim=NODE_DIM, time_dim=TIME_DIM)
 optimizer = torch.optim.Adam(tgan.parameters(), lr=LEARNING_RATE)
 criterion = torch.nn.BCELoss()
-tgan = tgan.to(device)
+#tgan = tgan.to(device)
 
 num_instance = len(train_src_l)
 num_batch = math.ceil(num_instance / BATCH_SIZE)

@@ -12,15 +12,15 @@ def preprocess(data_name):
         print(s)
         for idx, line in enumerate(f):
             e = line.strip().split(',')
-            u = int(e[0])
-            i = int(e[1])
+            u = int(e[0], 16)
+            i = int(e[1], 16)
             
             
             
             ts = float(e[2])
             label = int(e[3])
             
-            feat = np.array([float(x) for x in e[4:]])
+            feat = np.array([x for x in e[4:]])
             
             u_list.append(u)
             i_list.append(i)
@@ -38,50 +38,40 @@ def preprocess(data_name):
 
 
 def reindex(df):
-    assert(df.u.max() - df.u.min() + 1 == len(df.u.unique()))
-    assert(df.i.max() - df.i.min() + 1 == len(df.i.unique()))
-    
-    upper_u = df.u.max() + 1
-    new_i = df.i + upper_u
-    
+    # Create mappings for user and item addresses to continuous indices
+    user_mapping = {u: idx for idx, u in enumerate(df.u.unique())}
+    item_mapping = {i: idx + len(user_mapping) for idx, i in enumerate(df.i.unique())}
+
+    # Apply the mappings
     new_df = df.copy()
-    print(new_df.u.max())
-    print(new_df.i.max())
-    
-    new_df.i = new_i
-    new_df.u += 1
-    new_df.i += 1
-    new_df.idx += 1
-    
-    print(new_df.u.max())
-    print(new_df.i.max())
-    
+    new_df.u = new_df.u.map(user_mapping)
+    new_df.i = new_df.i.map(item_mapping)
+    new_df.idx += 1  # If necessary, adjust idx as well
+
     return new_df
 
 
 
 def run(data_name):
-    PATH = './processed/{}.csv'.format(data_name)
-    OUT_DF = './processed/ml_{}.csv'.format(data_name)
-    OUT_FEAT = './processed/ml_{}.npy'.format(data_name)
-    OUT_NODE_FEAT = './processed/ml_{}_node.npy'.format(data_name)
-    
+    PATH = './ETH_processed/{}.csv'.format(data_name)
+    OUT_DF = './ETH_processed/ml_{}.csv'.format(data_name)
+    OUT_FEAT = './ETH_processed/ml_{}.npy'.format(data_name)
+    OUT_NODE_FEAT = './ETH_processed/ml_{}_node.npy'.format(data_name)
+
     df, feat = preprocess(PATH)
     new_df = reindex(df)
-    
-    print(feat.shape)
-    empty = np.zeros(feat.shape[1])[np.newaxis, :]
-    feat = np.vstack([empty, feat])
-    
-    max_idx = max(new_df.u.max(), new_df.i.max())
-    rand_feat = np.zeros((max_idx + 1, feat.shape[1]))
-    
-    print(feat.shape)
-    new_df.to_csv(OUT_DF)
+
+    # Instead of max_idx, use the length of unique user and item indices
+    total_nodes = len(new_df.u.unique()) + len(new_df.i.unique())
+
+    # Create a zero matrix for node features
+    rand_feat = np.zeros((total_nodes, feat.shape[1]))
+
+    new_df.to_csv(OUT_DF, index=False)
     np.save(OUT_FEAT, feat)
     np.save(OUT_NODE_FEAT, rand_feat)
     
     
-run('wikipedia')
+run('eth_block_18168871_18168890_processed')
 
 #run('reddit')
